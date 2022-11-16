@@ -1,0 +1,136 @@
+clc; clear all;
+% Parameters
+A = 15.6/100;B=80/100;C=45/100;D=54.4/100;
+
+t = 0:0.1:10;
+
+ang_speed = -2*pi;
+theta = ang_speed*t;
+%% POSITIONS AND VELOCITIES
+P1 = [0;0];
+P4 = D*[-1;0];
+
+P2 = A*[cos(theta); sin(theta)];
+P2_x = P2(1,:);
+P2_y = P2(2,:);
+
+P2_vx = diff(P2_x)./diff(t);
+P2_vy = diff(P2_y)./diff(t);
+
+A_CG_x = P2(1,:)/2;
+A_CG_y = P2(2,:)/2;
+A_CG_vx = diff(A_CG_x)./diff(t);
+A_CG_vy = diff(A_CG_y)./diff(t);
+
+E = sqrt(A^2 + D^2 + 2*A*D*cos(theta));
+alfa = asin(A*sin(theta)./E);
+beta = acos((E.^2 + C^2 - B^2)./(2*E*C));
+P3 = [-D + C*cos(alfa+beta); C*sin(alfa+beta)];
+
+P3_x = P3(1,:);
+P3_y = P3(2,:);
+
+P3_vx = diff(P3_x)./diff(t);
+P3_vy = diff(P3_y)./diff(t);
+
+P3_v = sqrt(P3_vx.^2 + P3_vy.^2);
+
+B_CG_x = (P2(1,:)+P3(1,:))/2;
+B_CG_y = (P2(2,:)+P3(2,:))/2;
+B_CG_vx = diff(B_CG_x)./diff(t);
+B_CG_vy = diff(B_CG_y)./diff(t);
+
+C_CG_x = (P3(1,:)-D)/2;
+C_CG_y = P3(2,:)/2;
+C_CG_vx = diff(C_CG_x)./diff(t);
+C_CG_vy = diff(C_CG_y)./diff(t);
+
+%% ACCELERATIONS
+t = 0.1:0.1:10;
+A_CG_ax = diff(A_CG_vx)./diff(t);
+A_CG_ay = diff(A_CG_vy)./diff(t);
+A_CG_a = sqrt(A_CG_ax.^2 + A_CG_ay.^2);
+B_CG_ax = diff(B_CG_vx)./diff(t);
+B_CG_ay = diff(B_CG_vy)./diff(t);
+B_CG_a = sqrt(B_CG_ax.^2 + B_CG_ay.^2);
+C_CG_ax = diff(C_CG_vx)./diff(t);
+C_CG_ay = diff(C_CG_vy)./diff(t);
+P2_ax = diff(P2_vx)./diff(t);
+P2_ay = diff(P2_vy)./diff(t);
+P3_ax = diff(P3_vx)./diff(t);
+P3_ay = diff(P3_vy)./diff(t);
+
+%% ANG. VELOCITIES
+for i = 1:1:100
+omega_3(i) = (P3_vy(i) - P2_vy(i))./(-P3_x(i+1)+P2_x(i+1));
+omega_4(i) = (P3_vx(i))./(P3_y(i+1));
+end
+
+%% ANG. ACCNS
+alpha_3 = diff(omega_3)./diff(t);
+alpha_4 = diff(omega_4)./diff(t);
+
+%% FORCE ANALYSIS
+M_A = 1.834;M_B =7.8234;M_C=4.568;
+I_A=0.00677;I_B=0.465;I_C=0.094;
+Solution=[];
+for i = 1:1:99
+R_mat = [1 0 1 0 0 0 0 0 0;...
+    0 1 0 1 0 0 0 0 0;...
+    A_CG_y(i+2) -A_CG_x(i+2) (A_CG_y(i+2)-P2_y(i+2)) (P2_x(i+2)-A_CG_x(i+2)) 0 0 0 0 1;...
+    0 0 -1 0 1 0 0 0 0;...
+    0 0 0 -1 0 1 0 0 0;...
+    0 0 (P2_y(i+2)-B_CG_y(i+2)) (-P2_x(i+2)+B_CG_x(i+2)) (-P3_y(i+2)+B_CG_y(i+2)) (P3_x(i+2)-B_CG_x(i+2)) 0 0 0;...
+    0 0 0 0 -1 0 1 0 0;...
+    0 0 0 0 0 -1 0 1 0;...
+    0 0 0 0 (P3_y(i+2)-C_CG_y(i+2)) (-P3_x(i+2)+C_CG_x(i+2)) (C_CG_y(i+2)) (-54.4-C_CG_x(i+2)) 0];
+
+RHS = [M_A*A_CG_ax(i)-1*M_A*9.8*97/544; M_A*A_CG_ay(i)-1*M_A*9.80*535.4/544; 0;...
+    M_B*B_CG_ax(i)-1*M_B*9.80*97/544; M_B*B_CG_ay(i)-1*M_B*9.80*535.4/544;I_B*alpha_3(i);...
+    M_C*C_CG_ax(i)-1*M_C*9.80*97/544; M_C*C_CG_ay(i)-1*M_C*9.80*535.4/544; I_C*alpha_4(i)];
+
+%Sol(i) = [F12x(i); F12y(i); F32x(i); F32y(i); F43x(i); F43y(i); F14x(i); F14y(i); T(i)];
+Sol = inv(R_mat)*RHS;
+Solution = [Solution Sol];
+end;
+%%PLOT
+% for i=1:length(t);
+% 
+%    ani = subplot(2,1,1);
+%    P1_circle = viscircles(P1',0.05);
+%    P2_circle = viscircles(P2(:,i)',0.05);
+%    P3_circle = viscircles(P3(:,i)',0.05);
+%    P4_circle = viscircles(P4',0.05); 
+%    
+%    A_bar = line([P1(1) P2(1,i)],[P1(2) P2(2,i)]);
+%    B_bar = line([P2(1,i) P3(1,i)],[P2(2,i) P3(2,i)]);
+%    C_bar = line([P3(1,i) P4(1)],[P3(2,i) P4(2)]);
+%    
+%    axis(ani,'equal');
+%    set(gca,'XLim',[-100 50],'YLim',[-50 50]);
+%    
+%    str1 = 'P3';
+%    str2 = ['Time elapsed: '  num2str(t(i)) ' s'];
+%    P3_text = text(P3(1,i),P3(2,i)+0.4,str1);
+%    Time = text(-2,6,str2);
+%    pause(0.005);
+%    if i<length(t)
+%     delete(P1_circle);
+%     delete(P2_circle);
+%     delete(P3_circle);
+%     delete(P4_circle);
+%     delete(A_bar);
+%     delete(B_bar);
+%     delete(C_bar);
+%     delete(P3_text);
+%     delete(Time);
+%     vel = subplot(2,1,2);
+%     plot(vel,t(1:i),Solution(9,1:i));
+%     %set(vel,'XLim',[0 10],'YLim',[0 10]);
+%     xlabel(vel, 'Time (s)');
+%     ylabel(vel, 'Amplitude (m/s');
+%     title(vel,'Speed of P3');
+%     grid on;
+%    end
+% end
+

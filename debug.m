@@ -1,0 +1,33 @@
+A_CG_ax=119.94;
+A_CG_ay = -1875.01;
+B_CG_ax = -2509.35;
+B_CG_ay = -2645.23;
+C_CG_ax = -1259.67;
+C_CG_ay = -648.50;
+alpha_2 = -40;
+alpha_3=120.9;
+alpha_4=276.29;
+
+%% FORCE ANALYSIS
+M_A = 0.004;M_B =0.020;M_C=0.015;
+I_A=0.4;I_B=1.5;I_C=0.8;
+Solution=[];
+%for i = 1:1:599
+R_mat = [1 0 1 0 0 0 0 0 0;...
+    0 1 0 1 0 0 0 0 0;...
+    3 0 -1.33 2.5 0 0 0 0 1;...
+    0 0 -1 0 1 0 0 0 0;...
+    0 0 0 -1 0 1 0 0 0;...
+    0 0 -8.217 3.673 2.861 10.339 0 0 0;...
+    0 0 0 0 -1 0 1 0 0;...
+    0 0 0 0 0 -1 0 1 0;...
+    0 0 0 0 4.843 1.244 4.843 1.244 0];
+
+RHS = [M_A*A_CG_ax+0*M_A*980*cos(30*pi/180); M_A*A_CG_ay+0*M_A*980*sin(30*pi/180); I_A*alpha_2;...
+    M_B*B_CG_ax-69.28+0*M_B*980*cos(30*pi/180); M_B*B_CG_ay+40+0*M_B*980*sin(30*pi/180);I_B*alpha_3+116.65;...
+    M_C*C_CG_ax+0*M_C*980*cos(30*pi/180); M_C*C_CG_ay+0*M_C*980*cos(30*pi/180); I_C*alpha_4-120];
+
+%Sol(i) = [F12x(i); F12y(i); F32x(i); F32y(i); F43x(i); F43y(i); F14x(i); F14y(i); T(i)];
+Sol = inv(R_mat)*RHS;
+%Solution = [Solution Sol];
+%end
